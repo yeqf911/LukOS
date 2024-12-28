@@ -38,7 +38,8 @@ $(BIN): $(ASM_SRC_FILES)
 
 $(IMG): $(BIN)
 	@echo "Creating $< to $@ ..."
-	@dd if=$< of=$@ bs=512 count=1
+	@dd if=/dev/zero of=$@ bs=512 count=2880
+	@dd if=$< of=$@ bs=512 count=2880 conv=notrunc
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm
 	@echo "Assembling $< to $@ ..."
