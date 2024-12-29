@@ -1,6 +1,7 @@
 bits 16
+CYLS    EQU     10
 %ifndef DEBUG
-org 0x7C00
+    org 0x7C00
 %endif
 
 global _start
@@ -45,21 +46,91 @@ draw_upper:
     cmp DI, 32000
     jl draw_upper
 
-wait_keyboard:
-    mov AH, 0x00
-    int 0x16
+; wait_keyboard:
+;     mov AH, 0x00
+;     int 0x16
 
 draw_lower:
     mov byte [ES:EDI], 0x04
     inc EDI
     cmp EDI, 64000
     jl draw_lower
+    
+    jmp loop
 
-done:
+read_sector:
+    mov AX, 0x0820  ; 
+    mov ES, AX      ; 段地址，表示从 0x0820 * 16 开始
+    mov CH, 0       ; 柱面号
+    mov DH, 0       ; 磁头号
+    mov CL, 2       ; 扇区号
+
+readloop:
+    mov SI, 0       ; 记录失败次数
+retry:
+    mov AH, 0x02    ; 读盘
+    mov AL, 1       ; 读取的扇区数
+    mov BX, 0       ; 保留
+    mov DL, 0       ; 驱动器A
+    int 0x13        ; 磁盘中断
+    jnc next        ; 检查错误，CF=1则发生错误，CF=0正常
+    inc SI
+    cmp SI, 5       ; 最大重试5次
+    jge error       ; SI >= 5，jump to error
+
+check_err:
+    mov AH, 0x01
+    int 0x13
+
+reset_disk:
+    mov AH, 0x00    ; 复位磁盘系统（置磁盘控制器，清理操作状态）
+    mov DL, 0       ; 驱动器A
+    int 0x13
+    jnc retry
+
+next:
+    mov AX, ES      ; 从ES段寄存器读出当前段地址
+    add AX, 0x0020  ; 加上0x0020, 实际上是加0x0200=512
+    mov ES, AX      ; 重新赋值ES
+    add CL, 1       ; 扇区号+1
+    cmp CL, 18
+    jle readloop    ; 一直读到18扇区
+
+    mov CL, 1
+    add DH, 1
+    cmp DH, 2
+    jl readloop
+
+    mov DH, 0
+    mov CL, 1
+    add CH, 1
+    cmp CH, CYLS
+    jl readloop
+
+    ; jmp 0x0820 + 0x4200
+
+loop:
     cli
     hlt
-    jmp done
+    jmp loop
 
+error:
+    mov SI, message
+
+print_err:
+    mov AL, byte [SI]
+    inc SI
+    cmp AL, 0x00
+    je loop
+    mov AH, 0x0E    ; 服务号，表示直接显示单个字符
+    mov BL, 0x04    ; 字符的显示属性
+    mov BH, 0
+    int 0x10
+    jne print_err
+
+message db "load error!", 0x0d, 0x0a, 0x00
+
+_boot_flag:
     times 510-($-$$) DB 0x00
     DW 0xAA55
 
@@ -80,12 +151,12 @@ RootDir:
     ; 文件条目 1: 一个简单的文本文件 "HELLO.TXT"  
     db "HELLO   "                         ; 文件名（8 字节）  
     db "TXT"                              ; 文件扩展名（3 字节）  
-    db 0x20                                  ; 文件属性  
+    db 0x20                               ; 文件属性  
     times 10 db 0                         ; 保留位置填充  
     dw 0                                  ; 创建时间  
     dw 0                                  ; 创建日期  
     dw 2                                  ; 首簇号（此文件从数据区域开始的第一个簇）  
-    dd 19                                 ; 文件大小（12 字节）  
+    dd 19                                 ; 文件大小（"Hello yeqianfeng!\回车\换行" 19 字节）  
 
     times 32 * 224 - 32 db 0x00           ; 填充根目录剩余扇区（224 条目，共 14 扇区）  
 
@@ -93,4 +164,4 @@ RootDir:
 DataArea:  
     ; 数据区域，存储文件内容  
     db "Hello yeqianfeng!", 0x0D, 0x0A     ; HELLO.TXT 的内容  
-    times 512*2847 - ($ - $$) db 0x00     ; 填充剩余数据区域内容为空 
+    times 512*2880 - ($ - $$) db 0x00     ; 填充剩余数据区域内容为空 

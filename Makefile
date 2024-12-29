@@ -2,58 +2,66 @@
 SRC_DIR=src
 BUILD_DIR=build
 OBJ_DIR=$(BUILD_DIR)/obj
-BIN_DIR=$(BUILD_DIR)/bin
+SYS_DIR=$(BUILD_DIR)/sys
 
 ASM_SRC_FILES=$(wildcard $(SRC_DIR)/*.asm)
 OBJ_FILES=$(patsubst $(SRC_DIR)/%.asm, $(OBJ_DIR)/%.o, $(ASM_SRC_FILES))
-BIN_FILES=$(patsubst $(SRC_DIR)/%.asm, $(BIN_DIR)/%.bin, $(ASM_SRC_FILES))
+SYS_FILES=$(patsubst $(SRC_DIR)/%.asm, $(SYS_DIR)/%.sys, $(ASM_SRC_FILES))
 
 # OUTPUT
-BIN=$(BIN_DIR)/boot.bin
+BOOT=$(SYS_DIR)/boot.sys
+OS=$(SYS_DIR)/luk.sys
 IMG=$(BUILD_DIR)/LukOS.img
 SYMBOL=$(BUILD_DIR)/boot.elf
 
 # RUN
 QEMU=qemu-system-i386
-QEMU_OPS=-drive format=raw,file=$(IMG)
-
+QEMU_OPS=-drive format=raw,file=$(IMG),if=floppy
 # 编译器和链接器
 NASM=nasm
 LD=ld
+DD=dd
+MCOPY=mcopy
+RM=rm -rf
 
 # 编译选项
 NASM_FLAGS=-f elf32 -D DEBUG -g -F dwarf
 LD_FLAGS=-m elf_i386
 
 # 默认目标
-all: prepare $(BIN) $(SYMBOL) $(IMG)
+all: prepare $(SYMBOL) $(IMG)
 
 $(SYMBOL): $(OBJ_FILES)
 	@echo "Linking kernal to binary..."
 	$(LD) $(LD_FLAGS) -Ttext 0x7C00 -o $@ $^
 
-$(BIN): $(ASM_SRC_FILES)
-	@echo "Assembling $< to $@ ..."
-	$(NASM) -f bin $< -o $@
+# $(BIN): $(ASM_SRC_FILES)
+# 	@echo "Assembling $< to $@ ..."
+# 	$(NASM) -f bin $< -o $@
 
-$(IMG): $(BIN)
+$(IMG): $(SYS_FILES)
 	@echo "Creating $< to $@ ..."
-	@dd if=/dev/zero of=$@ bs=512 count=2880
-	@dd if=$< of=$@ bs=512 count=2880 conv=notrunc
+	$(DD) if=/dev/zero of=$@ bs=512 count=2880
+	$(DD) if=$(BOOT) of=$@ bs=512 count=1 conv=notrunc
+# $(MCOPY) -i $@ $(OS) ::
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm
 	@echo "Assembling $< to $@ ..."
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
-prepare: $(BUILD_DIR) $(OBJ_DIR) $(BIN_DIR)
+$(SYS_DIR)/%.sys: $(SRC_DIR)/%.asm
+	@echo "Assembling $< to $@ ..."
+	$(NASM) -f bin $< -o $@
 
-$(BUILD_DIR) $(OBJ_DIR) $(BIN_DIR):
+prepare: $(BUILD_DIR) $(OBJ_DIR) $(SYS_DIR)
+
+$(BUILD_DIR) $(OBJ_DIR) $(SYS_DIR):
 	@mkdir -p $@
 	@echo "Create direcotory: $@"
 
 clean:
 	@echo "Cleaning..."
-	rm -rf $(BUILD_DIR)
+	$(RM) $(BUILD_DIR)
 	@echo "Build dir has been cleaned."
 
 run: all
