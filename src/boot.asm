@@ -1,4 +1,5 @@
 bits 16
+
 CYLS    EQU     10
 %ifndef DEBUG
     org 0x7C00
@@ -33,31 +34,7 @@ global _start
     FileSystemType db "FAT12   " ; 文件系统类型标识符
 
 _start:
-    mov AH, 0x00
-    mov AL, 0x13
-    int 0x10
-
-    mov AX, 0xA000
-    mov ES, AX
-    xor DI, DI
-draw_upper:
-    mov byte [ES:DI], 0x15
-    inc DI
-    cmp DI, 32000
-    jl draw_upper
-
-; wait_keyboard:
-;     mov AH, 0x00
-;     int 0x16
-
-draw_lower:
-    mov byte [ES:EDI], 0x04
-    inc EDI
-    cmp EDI, 64000
-    jl draw_lower
-    
-    jmp loop
-
+    nop
 read_sector:
     mov AX, 0x0820  ; 
     mov ES, AX      ; 段地址，表示从 0x0820 * 16 开始
@@ -106,13 +83,16 @@ next:
     add CH, 1
     cmp CH, CYLS
     jl readloop
+    mov si, message
+    call print_err
+flag:
+    mov al, 0
+    jmp 0xc200
 
-    ; jmp 0x0820 + 0x4200
-
-loop:
-    cli
-    hlt
-    jmp loop
+; loop:
+;     cli
+;     hlt
+;     jmp loop
 
 error:
     mov SI, message
@@ -120,13 +100,15 @@ error:
 print_err:
     mov AL, byte [SI]
     inc SI
-    cmp AL, 0x00
-    je loop
+    cmp AL, 0
+    je .done
     mov AH, 0x0E    ; 服务号，表示直接显示单个字符
     mov BL, 0x04    ; 字符的显示属性
     mov BH, 0
     int 0x10
-    jne print_err
+    jmp print_err
+    .done:
+        ret
 
 message db "load error!", 0x0d, 0x0a, 0x00
 
