@@ -1,0 +1,27 @@
+# 完整的 bochsrc 配置  
+# 基本系统配置  
+megs: 32  
+romimage: file=/opt/homebrew/share/bochs/BIOS-bochs-latest  
+vgaromimage: file=/opt/homebrew/share/bochs/VGABIOS-lgpl-latest  
+
+# 启动配置  
+floppya: 1_44=build/LukOS.img, status=inserted  
+boot: floppy  
+
+# 显示配置  
+display_library: sdl2  
+# display_library: sdl2, options="gui_debug"  # 启用图形调试界面  
+
+# 调试配置  
+magic_break: enabled=1  
+debug: action=report  
+#debug_symbols: file=kernel.sym  
+
+# CPU 配置  
+cpu: count=1, ips=1000000  
+clock: sync=realtime, time0=local  
+
+# 其他设备配置  
+mouse: enabled=0  
+keyboard: type=mf, serial_delay=250  
+speaker: enabled=1, mode=system

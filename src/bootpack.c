@@ -1,6 +1,6 @@
 extern void io_hlt();
 
-void main()
+int main()
 {
     while (1)
     {

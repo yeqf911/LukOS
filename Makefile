@@ -1,4 +1,5 @@
 # 定义变量
+UNAME=$(shell uname -s)
 SRC_DIR=src
 BUILD_DIR=build
 OBJ_DIR=$(BUILD_DIR)/obj
@@ -18,22 +19,46 @@ OS=$(BUILD_DIR)/kernel.sys
 IMG=$(BUILD_DIR)/LukOS.img
 SYMBOL=$(BUILD_DIR)/LukOS.elf
 
-# RUN
-QEMU=qemu-system-i386
-QEMU_OPS=-boot order=a -drive format=raw,file=$(IMG),if=floppy
-
 # 编译器和链接器
 NASM=nasm
-LD=ld
+LD=
 DD=dd
 MCOPY=mcopy
 RM=rm -rf
-GCC=gcc
+GCC=
 
 # 编译选项
-NASM_FLAGS=-f elf32 -D DEBUG -g -F dwarf
-LD_FLAGS=-m elf_i386 -T $(SRC_DIR)/linker.ld
-GCC_FLAGS=-m32 -fno-builtin -fno-stack-protector -fno-pie -nostdlib
+NASM_FLAGS=-D DEBUG -g -F dwarf
+LD_FLAGS=-T linker.ld
+GCC_FLAGS=-fno-builtin -fno-stack-protector -fno-pie -nostdlib
+
+# debug
+QEMU=qemu-system-i386
+QEMU_OPS=-boot order=a -drive format=raw,file=$(IMG),if=floppy
+BOCHS=bochs
+
+ifeq ($(UNAME), Darwin)
+	LD=x86_64-elf-ld
+	GCC=x86_64-elf-gcc
+	GCC_FLAGS += -m64
+	NASM_FLAGS += -felf64
+	LD_FLAGS += -m elf_x86_64
+endif
+
+ifeq ($(UNAME), Linux)
+	LD=ld
+	GCC=gcc
+	GCC_FLAGS += -m32
+	NASM_FLAGS += -felf32
+	LD_FLAGS += -m elf_i386
+endif
+
+# RUN
+ifeq ($(UNAME), Darwin)
+	RUN=$(BOCHS) -f bochsrc -q
+else
+	RUN=$(QEMU) $(QEMU_OPS)
+endif
 
 # 默认目标
 all: prepare $(SYMBOL) $(IMG)
@@ -73,7 +98,7 @@ clean:
 	@echo "Build dir has been cleaned."
 
 run: all
-	$(QEMU) $(QEMU_OPS)
+	$(RUN)
 
 debug: all
 	$(QEMU) $(QEMU_OPS) -S -s
