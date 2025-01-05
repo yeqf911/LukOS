@@ -7,9 +7,9 @@ OBJ_DIR = $(BUILD_DIR)/obj
 BIN_DIR = $(BUILD_DIR)/bin
 MAP_DIR = $(BUILD_DIR)/map
 
-ASM_SOURCES = $(wildcard $(SRC_DIR)/*.asm)
-BIN_TARGETS = $(patsubst $(SRC_DIR)/%.asm, $(BIN_DIR)/%.bin, $(ASM_SOURCES))
-MAP_FILES = $(patsubst $(SRC_DIR)/%.asm, $(MAP_DIR)/%.map, $(ASM_SOURCES))
+ASM_SOURCES = $(wildcard $(SRC_DIR)/boot/*.asm)
+BIN_TARGETS = $(patsubst $(SRC_DIR)/boot/%.asm, $(BIN_DIR)/%.bin, $(ASM_SOURCES))
+MAP_FILES = $(patsubst $(SRC_DIR)/boot/%.asm, $(MAP_DIR)/%.map, $(ASM_SOURCES))
 
 C_SOURCES = $(wildcard $(SRC_DIR)/*.c)
 OBJ_TARGETS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(C_SOURCES))
@@ -80,7 +80,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(GCC) $(GCC_FLAGS) -c $< -o $@
 
 # asm文件编译成bin文件
-$(BIN_DIR)/%.bin: $(SRC_DIR)/%.asm | $(BIN_DIR) $(MAP_DIR)
+$(BIN_DIR)/%.bin: $(SRC_DIR)/boot/%.asm | $(BIN_DIR) $(MAP_DIR)
 	@echo "Assembling $< to $@ ..."
 	$(NASM) $(NASM_FLAGS) -o $@ $<
 
