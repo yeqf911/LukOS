@@ -1,106 +1,107 @@
 # 定义变量
-UNAME=$(shell uname -s)
-SRC_DIR=src
-BUILD_DIR=build
-OBJ_DIR=$(BUILD_DIR)/obj
-BIN_DIR=$(BUILD_DIR)/bin
+UNAME = $(shell uname -s)
 
-ASM_SRC_FILES=$(wildcard $(SRC_DIR)/*.asm)
-ASM_OBJ_FILES=$(patsubst $(SRC_DIR)/%.asm, $(OBJ_DIR)/%.o, $(ASM_SRC_FILES))
-BIN_FILES=$(patsubst $(SRC_DIR)/%.asm, $(BIN_DIR)/%.bin, $(ASM_SRC_FILES))
+SRC_DIR = src
+BUILD_DIR = build
+OBJ_DIR = $(BUILD_DIR)/obj
+BIN_DIR = $(BUILD_DIR)/bin
+MAP_DIR = $(BUILD_DIR)/map
 
-C_SRC_FILES=$(wildcard $(SRC_DIR)/*.c)
-C_OBJ_FILES=$(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(C_SRC_FILES))
+ASM_SOURCES = $(wildcard $(SRC_DIR)/*.asm)
+BIN_TARGETS = $(patsubst $(SRC_DIR)/%.asm, $(BIN_DIR)/%.bin, $(ASM_SOURCES))
+MAP_FILES = $(patsubst $(SRC_DIR)/%.asm, $(MAP_DIR)/%.map, $(ASM_SOURCES))
 
-# OUTPUT
-BOOT=$(BIN_DIR)/boot.bin
-KERNEL=$(BIN_DIR)/kernel.bin
-OS=$(BUILD_DIR)/kernel.sys
-IMG=$(BUILD_DIR)/LukOS.img
-SYMBOL=$(BUILD_DIR)/LukOS.elf
+C_SOURCES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_TARGETS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(C_SOURCES))
+
+# debug模式
+DEBUG ?= on
+# 启动方式 a:软盘，h硬盘
+BOOT ?= a
+
+# Target
+BOOT_BIN = $(BIN_DIR)/boot.bin
+LOADER_BIN = $(BIN_DIR)/loader.bin
+KERNEL_SYS = $(BUILD_DIR)/kernel.sys
+OS_IMG = $(BUILD_DIR)/LukOS.img
 
 # 编译器和链接器
-NASM=nasm
-LD=
-DD=dd
-MCOPY=mcopy
-RM=rm -rf
-GCC=
+NASM = nasm
+LD =
+DD = dd
+MCOPY = mcopy
+GCC =
 
 # 编译选项
-NASM_FLAGS=-D DEBUG -g -F dwarf
-LD_FLAGS=-T linker.ld
-GCC_FLAGS=-fno-builtin -fno-stack-protector -fno-pie -nostdlib
+NASM_FLAGS = -f bin
+NASM_DEBUG_FLAGS = -g
+LD_FLAGS = -T linker.ld
+GCC_FLAGS = -fno-builtin -fno-stack-protector -fno-pie -nostdlib
 
-# debug
-QEMU=qemu-system-i386
-QEMU_OPS=-boot order=a -drive format=raw,file=$(IMG),if=floppy
-BOCHS=bochs
+ifeq ($(DEBUG),on)
+	NASM_FLAGS += -l $(MAP_DIR)/$*.map
+endif
+
+# Run
+QEMU = qemu-system-i386 -boot order=a -drive format=raw,file=$(OS_IMG),if=floppy
+BOCHS = bochs -f bochsrc -q
 
 ifeq ($(UNAME), Darwin)
-	LD=x86_64-elf-ld
-	GCC=x86_64-elf-gcc
+	LD = x86_64-elf-ld
+	GCC = x86_64-elf-gcc
 	GCC_FLAGS += -m64
-	NASM_FLAGS += -felf64
 	LD_FLAGS += -m elf_x86_64
 endif
 
 ifeq ($(UNAME), Linux)
-	LD=ld
-	GCC=gcc
+	LD = ld
+	GCC = gcc
 	GCC_FLAGS += -m32
-	NASM_FLAGS += -felf32
 	LD_FLAGS += -m elf_i386
 endif
 
-# RUN
-ifeq ($(UNAME), Darwin)
-	RUN=$(BOCHS) -f bochsrc -q
-else
-	RUN=$(QEMU) $(QEMU_OPS)
-endif
-
 # 默认目标
-all: prepare $(SYMBOL) $(IMG)
+all: $(OS_IMG)
 
-$(SYMBOL): $(ASM_OBJ_FILES) $(C_OBJ_FILES)
+$(SYMBOL): $(OBJ_TARGETS)
 	@echo "Linking kernal to binary..."
 	$(LD) $(LD_FLAGS) -o $@ $^
 
-$(IMG): $(BIN_FILES)
+# 生成软盘镜像文件
+$(OS_IMG): $(BIN_TARGETS) $(OBJ_TARGETS) floppy
 	@echo "Creating $< to $@ ..."
-	$(DD) if=/dev/zero of=$@ bs=512 count=2880
-	$(DD) if=$(BOOT) of=$@ bs=512 count=1 conv=notrunc
-	$(DD) if=$(KERNEL) of=$(OS) bs=512 conv=sync
-	$(MCOPY) -i $@ $(OS) ::
+	$(DD) if=$(BOOT_BIN) of=$@ bs=1 count=1474560 skip=62 seek=62 conv=notrunc >/dev/null 2>&1
+	$(DD) if=$(LOADER_BIN) of=$(KERNEL_SYS) bs=512 conv=sync >/dev/null 2>&1
+	$(MCOPY) -i $@ $(KERNEL_SYS) ::
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm
-	@echo "Assembling $< to $@ ..."
-	$(NASM) $(NASM_FLAGS) $< -o $@
-
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+# c文件编译成obj文件
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	@echo "Compile $< to $@ ..."
 	$(GCC) $(GCC_FLAGS) -c $< -o $@
 
-$(BIN_DIR)/%.bin: $(SRC_DIR)/%.asm
+# asm文件编译成bin文件
+$(BIN_DIR)/%.bin: $(SRC_DIR)/%.asm | $(BIN_DIR) $(MAP_DIR)
 	@echo "Assembling $< to $@ ..."
-	$(NASM) -f bin $< -o $@
+	$(NASM) $(NASM_FLAGS) -o $@ $<
 
-prepare: $(BUILD_DIR) $(OBJ_DIR) $(BIN_DIR)
-
-$(BUILD_DIR) $(OBJ_DIR) $(BIN_DIR):
+$(BUILD_DIR) $(OBJ_DIR) $(BIN_DIR) $(MAP_DIR):
 	@mkdir -p $@
 	@echo "Create direcotory: $@"
 
+# 创建FAT12格式软盘
+floppy:
+	@qemu-img create -f raw $(OS_IMG) 1440K >/dev/null 2>&1
+	@mkfs.fat -F 12 -n "LUKOS" $(OS_IMG) >/dev/null 2>&1
+
 clean:
 	@echo "Cleaning..."
-	$(RM) $(BUILD_DIR)
+	@rm -rf $(BIN_TARGETS) $(MAP_FILES) $(OBJ_TARGETS) $(KERNEL) $(OS_IMG) $(KERNEL_SYS)
 	@echo "Build dir has been cleaned."
 
 run: all
-	$(RUN)
+	$(QEMU)
 
 debug: all
-	$(QEMU) $(QEMU_OPS) -S -s
+	$(QEMU) -S -s 
 
-.PHONE: all clean prepare
+.PHONE: all clean

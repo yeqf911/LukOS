@@ -1,7 +1,7 @@
 ; ams function
-    section .text
-    bits 32
-    global io_hlt
+[bits 32]
+section .text
+global io_hlt
 
 io_hlt:
     hlt
