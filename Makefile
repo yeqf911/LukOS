@@ -104,4 +104,4 @@ run: all
 debug: all
 	$(QEMU) -S -s 
 
-.PHONE: all clean
+.PHONY: all clean
