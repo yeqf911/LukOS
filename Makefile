@@ -90,16 +90,20 @@ $(BUILD_DIR) $(OBJ_DIR) $(BIN_DIR) $(MAP_DIR):
 
 # 创建FAT12格式软盘
 floppy:
-	@qemu-img create -f raw $(OS_IMG) 1440K >/dev/null 2>&1
+	$(DD) if=/dev/zero of=$(OS_IMG) bs=1024 count=1440 
 	@mkfs.fat -F 12 -n "LUKOS" $(OS_IMG) >/dev/null 2>&1
 
 clean:
 	@echo "Cleaning..."
-	@rm -rf $(BIN_TARGETS) $(MAP_FILES) $(OBJ_TARGETS) $(KERNEL) $(OS_IMG) $(KERNEL_SYS)
+	@rm -rf $(BUILD_DIR)/**/*.bin
+	@rm -rf $(BUILD_DIR)/**/*.map
+	@rm -rf $(BUILD_DIR)/*.elf
+	@rm -rf $(BUILD_DIR)/**/*.o
 	@echo "Build dir has been cleaned."
 
 run: all
-	$(QEMU)
+#	$(QEMU)
+	$(BOCHS)
 
 debug: all
 	$(QEMU) -S -s 
