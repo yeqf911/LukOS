@@ -45,7 +45,7 @@ msg db "Loading LukOS success!!!", 0x0a, 0x0d, 0x00
 
 [bits 32]
 protected_mode:
-    ; 初始化段寄存器
+    ; 初始化段寄存器,初始化位数据段选择子
     mov ax, data_seg_selector
     mov ds, ax
     mov es, ax
