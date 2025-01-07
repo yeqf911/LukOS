@@ -102,10 +102,11 @@ clean:
 	@echo "Build dir has been cleaned."
 
 run: all
-#	$(QEMU)
-	$(BOCHS)
+	$(QEMU)
+#	 $(BOCHS)
 
 debug: all
-	$(QEMU) -S -s 
+#	$(QEMU) -S -s 
+	$(BOCHS)
 
 .PHONY: all clean

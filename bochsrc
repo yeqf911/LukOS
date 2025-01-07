@@ -18,10 +18,10 @@ boot: floppy
 # display_library: sdl2  
 display_library: x, options="gui_debug"  # 启用图形调试界面  
 
-# 调试配置  
-magic_break: enabled=1  
+# 调试配置
+magic_break: enabled=1
 # debug: action=report
-#debug_symbols: file=kernel.sym  
+#debug_symbols: file=kernel.sym
 
 # 其他设备配置  
 mouse: enabled=0  
