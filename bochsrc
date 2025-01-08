@@ -3,8 +3,8 @@
 megs: 32                    # 设置物理内存为 32MB  
 # memory: host=32, guest=32   # 明确指定主机和客户机内存  
 
-romimage: file="/usr/share/bochs/BIOS-bochs-latest"
-vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
+romimage: file="/opt/homebrew/opt/bochs/share/bochs/BIOS-bochs-latest"
+vgaromimage: file="/opt/homebrew/opt/bochs/share/bochs/VGABIOS-lgpl-latest"
 
 # CPU 配置  
 cpu: count=1, ips=1000000 #, reset_on_triple_fault=1  # 添加重置选项  
@@ -16,7 +16,7 @@ boot: floppy
 
 # 显示配置  
 # display_library: sdl2  
-display_library: x, options="gui_debug"  # 启用图形调试界面  
+display_library: sdl2#, options="gui_debug"  # 启用图形调试界面  
 
 # 调试配置
 magic_break: enabled=1
