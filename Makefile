@@ -7,20 +7,17 @@ OBJ_DIR = $(BUILD_DIR)/obj
 BIN_DIR = $(BUILD_DIR)/bin
 MAP_DIR = $(BUILD_DIR)/map
 
-ASM_SOURCES = $(wildcard $(SRC_DIR)/*/*.asm)
+# ASM source
+ASM_SOURCES = $(wildcard $(SRC_DIR)/boot/*.asm)
 BIN_TARGETS = $(patsubst $(SRC_DIR)/%.asm, $(BIN_DIR)/%.bin, $(ASM_SOURCES))
 MAP_FILES = $(patsubst $(SRC_DIR)/%.asm, $(MAP_DIR)/%.map, $(ASM_SOURCES))
 ASM_OBJECTS = $(patsubst $(SRC_DIR)/%.asm, $(OBJ_DIR)/%.o, $(wildcard $(SRC_DIR)/kernel/*.asm))
 
+# C source
 C_SOURCES = $(wildcard $(SRC_DIR)/**/*.c)
 C_OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(C_SOURCES))
 
-$(info ASM_SOURCES is: $(ASM_SOURCES))
-$(info BIN_TARGETS is: $(BIN_TARGETS))
-$(info MAP_FILES is: $(MAP_FILES))
-$(info ASM_OBJECTS is: $(ASM_OBJECTS))
-$(info C_SOURCES ie: $(C_SOURCES))
-$(info C_OBJECTS is: $(C_OBJECTS))
+OBJECTS = $(ASM_OBJECTS) $(C_OBJECTS)
 
 # debug模式
 DEBUG ?= on
@@ -116,5 +113,14 @@ run: all
 debug: all
 #	$(QEMU) -S -s 
 	$(BOCHS)
+
+show:
+	$(info ASM_SOURCES is: $(ASM_SOURCES))
+	$(info BIN_TARGETS is: $(BIN_TARGETS))
+	$(info MAP_FILES is: $(MAP_FILES))
+	$(info ASM_OBJECTS is: $(ASM_OBJECTS))
+	$(info C_SOURCES ie: $(C_SOURCES))
+	$(info C_OBJECTS is: $(C_OBJECTS))
+	$(info OBJECTS is: $(OBJECTS))
 
 .PHONY: all clean
