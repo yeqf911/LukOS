@@ -24,11 +24,11 @@ _start:
     call print
 
     xor bx, bx
-    mov ax, 0x0820
+    mov ax, 0x0800
     call read_chs
-
-    cmp word [0xc200], 0x55aa
-    je 0xc200
+    xchg bx, bx
+    cmp word [0x8400], 0x55aa
+    je 0x8400
     mov si, loading_error
     call print
 

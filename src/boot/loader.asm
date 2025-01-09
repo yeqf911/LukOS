@@ -1,4 +1,4 @@
-[org 0xc200]
+[org 0x8400]
 
 dw 0x55aa
 
@@ -52,10 +52,11 @@ protected_mode:
     mov ss, ax
     mov fs, ax
     mov gs, ax
-
+    xchg bx, bx
     mov esp, 0x10000    ; 修改栈顶
     mov byte [0xb8000], '@' ; 修改显存内容
-
+    xchg bx, bx
+    jmp 0xc210
     jmp $
 
 code_seg_selector equ 1 << 3 ; 因为一个段的长度位8字节
