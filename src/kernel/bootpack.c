@@ -1,4 +1,5 @@
 extern void io_hlt();
+extern void set_x();
 
 char message[] = "OK";
 char buf[1024];
@@ -10,4 +11,5 @@ void kernel_init()
     video[2] = 'B';
     video[4] = 'F';
     video[6] = 'G';
+    set_x();
 }
