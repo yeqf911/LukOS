@@ -82,7 +82,8 @@ $(OS_IMG): $(BIN_TARGETS) $(KERNEL_ELF) $(OBJECTS)
 	@echo "Creating $< to $@ ..."
 	$(DD) if=$(BOOT_BIN) of=$@ bs=1 count=512 skip=62 seek=62 conv=notrunc >/dev/null 2>&1
 	$(DD) if=$(LOADER_BIN) of=$@ bs=512 count=1 seek=2 conv=notrunc >/dev/null 2>&1
-	$(DD) if=$(KERNEL_ELF) of=$(KERNEL_SYS) bs=512 conv=sync >/dev/null 2>&1
+#	$(DD) if=$(KERNEL_ELF) of=$(KERNEL_SYS) bs=512 conv=sync >/dev/null 2>&1
+	@objcopy -O binary $(KERNEL_ELF) $(KERNEL_SYS)
 	MTOOLS_SKIP_CHECK=1 $(MCOPY) -i $@ $(KERNEL_SYS) ::
 #	@echo "Creating bootable floppy image..."
 #    # 写入引导扇区
