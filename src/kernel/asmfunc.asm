@@ -3,12 +3,15 @@
 section .text
 global io_hlt
 global set_x
+global debug
 
 io_hlt:
     hlt
     ret
-    mov byte [0xb8000], 'Q' ; 此处多一行，内核的地址会发生变化,对应的 0xc010也需要改为0xc020
+
+debug:
+    xchg bx, bx
+    ret
 
 set_x:
     mov byte [0xb8000], 'W'
-    jmp $

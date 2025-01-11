@@ -56,7 +56,7 @@ protected_mode:
     mov esp, 0x10000    ; 修改栈顶
     mov byte [0xb8000], '@' ; 修改显存内容
     xchg bx, bx
-    jmp 0xc020
+    jmp 0xc010
     jmp $
 
 code_seg_selector equ 1 << 3 ; 因为一个段的长度位8字节

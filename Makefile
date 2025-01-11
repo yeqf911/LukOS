@@ -116,7 +116,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 $(KERNEL_ELF): $(OBJECTS)
 	@echo "link all the obj to elf..."
 	$(info OBJECTS is: $(OBJECTS))
-	ld -m elf_i386 -static $^ -o $@ -Ttext 0xc200
+	ld -T linker.ld -static $^ -o $@
 
 clean:
 	@echo "Cleaning..."
